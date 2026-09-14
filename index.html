@@ -70,9 +70,28 @@
   .stat.warn .n{ color:var(--warn); }
   .stat.crit .n{ color:var(--crit); }
 
+  .metrics{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:22px; }
+  .metric{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .metric .m-label{ font-size:12.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+  .metric .m-sub{ font-size:11.5px; color:var(--muted); margin-top:3px; }
+  .metric .m-val{ font-family:'IBM Plex Mono'; font-size:28px; font-weight:600; color:var(--accent); white-space:nowrap; }
+
   .row2{ display:grid; grid-template-columns:1.3fr 1fr; gap:14px; margin-bottom:14px; }
   .card{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:16px 18px; box-shadow:var(--shadow); }
   .card h3{ font-size:13px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 14px; font-weight:600; }
+
+  .cases{ display:flex; flex-direction:column; gap:10px; }
+  .case{ border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+  .case .chead{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px; flex-wrap:wrap; }
+  .case .cname{ font-weight:600; font-size:13.5px; }
+  .case .cphone{ font-family:'IBM Plex Mono'; font-size:12px; color:var(--muted); }
+  .case .ctime{ font-size:12px; font-weight:600; padding:2px 9px; border-radius:999px; }
+  .case .ctime.resolved{ background:var(--ok-bg); color:var(--ok); }
+  .case .ctime.open{ background:var(--crit-bg); color:var(--crit); }
+  .case-steps{ display:flex; flex-direction:column; gap:5px; }
+  .case-step{ display:flex; gap:8px; align-items:baseline; font-size:12.5px; }
+  .case-step .cs-time{ font-family:'IBM Plex Mono'; color:var(--muted); flex:none; width:70px; }
+  .case-step .cs-txt{ color:var(--ink); }
 
   .chart{ display:flex; align-items:flex-end; gap:10px; height:120px; padding-top:6px; }
   .chart .col{ flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:0; }
@@ -115,6 +134,7 @@
 
   @media (max-width:820px){
     .stats{ grid-template-columns:1fr 1fr; }
+    .metrics{ grid-template-columns:1fr; }
     .breakdowns{ grid-template-columns:1fr; }
     .row2{ grid-template-columns:1fr; }
   }
@@ -140,6 +160,8 @@
 
   <div class="stats" id="stats-row"></div>
 
+  <div class="metrics" id="metrics-row"></div>
+
   <div class="row2">
     <div class="card">
       <h3>Llamadas por día</h3>
@@ -153,13 +175,18 @@
 
   <div class="breakdowns" id="breakdowns"></div>
 
+  <div class="card" style="margin-bottom:26px;">
+    <h3>Seguimiento por cliente</h3>
+    <div class="cases" id="cases-box"></div>
+  </div>
+
   <h2 class="section">Detalle de llamadas <span class="count" id="table-count"></span></h2>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Hora</th><th>Agente</th><th>Campaña</th><th># Memb./Emp.</th><th>Quién llamó</th>
-          <th>Teléfono</th><th>Tipo</th><th>Motivo</th><th>Prioridad</th><th>Estatus</th><th>Notas</th>
+          <th>Teléfono</th><th>Tipo</th><th>Motivo</th><th>Prioridad</th><th>Estatus</th><th>Min</th><th>Notas</th>
         </tr>
       </thead>
       <tbody id="calls-body"></tbody>
@@ -170,7 +197,7 @@
 </div>
 
 <script>
-  const CALLS = [{"ts": "2026-09-04 13:02:41", "hora": "13:02", "agente": "Jazmin", "campana": "Pliis", "membresia": "1", "quien": "David Calixto", "telefono": "5567890450", "tipo": "Entrante", "fecha": "4/9/2026", "motivo": "Beneficios", "prioridad": "Normal", "estatus": "Completado", "notas": "Llamó un usuario porque no podía descargar el boleto; se le explicó cómo descargarlo y se descargó manual."}, {"ts": "2026-09-04 13:02:49", "hora": "13:02", "agente": "Berenice", "campana": "Pliis", "membresia": "1", "quien": "David Calixto", "telefono": "5556024182", "tipo": "Entrante", "fecha": "4/9/2026", "motivo": "Beneficios", "prioridad": "Normal", "estatus": "Completado", "notas": "Se enviaron boletos e ingresó correctamente."}, {"ts": "2026-09-04 13:18:47", "hora": "13:18", "agente": "David", "campana": "DONDÉ", "membresia": "1", "quien": "David Calixto", "telefono": "5520293837", "tipo": "Saliente", "fecha": "4/9/2026", "motivo": "Asistencias", "prioridad": "Normal", "estatus": "Completado", "notas": "Se llamó al usuario para dar seguimiento de su asistencia dental."}, {"ts": "2026-09-04 13:30:05", "hora": "13:30", "agente": "Jazmin", "campana": "Canaven", "membresia": "0424859494365322", "quien": "Cesar López Cheu", "telefono": "55 8411 0433", "tipo": "Saliente", "fecha": "4/9/2026", "motivo": "Información General", "prioridad": "Normal", "estatus": "Completado", "notas": "Llamé, sonó el tono de llamada, pero mandó a buzón; no hubo respuesta del usuario."}, {"ts": "2026-09-04 13:34:01", "hora": "13:34", "agente": "Jazmin", "campana": "Canaven", "membresia": "0424859494365322", "quien": "Cesar Lopez Cheu", "telefono": "55 8411 0433", "tipo": "Saliente", "fecha": "4/9/2026", "motivo": "Información General", "prioridad": "Normal", "estatus": "Completado", "notas": "Llamé al usuario, obtuve respuesta, le informé sobre el depósito de su reembolso y que la siguiente semana nos comunicaríamos por la documentación faltante; se despidió cordialmente."}];
+  const CALLS = [{"ts": "2026-09-04 13:34:01", "hora": "13:34", "agente": "Jazmin", "campana": "Canaven", "membresia": "0424859494365322", "quien": "Cesar Lopez Cheu", "telefono": "55 8411 0433", "tipo": "Saliente", "fecha": "4/9/2026", "motivo": "Información General", "prioridad": "Normal", "estatus": "Completado", "notas": "Llame al usuario, al obtener respuesta del usuario, me presente amablemente, le informe que el motivo de mi llamada era para informarle que ayer se realizó el depósito de su reembolso, el usuario confirmo y comente que intentamos comunicarnos con el pero no obtuvimos respuesta de su parte. Le mencione que estábamos en espera de su documentación faltante y le informe que la siguiente semana nos estaríamos comunicando nuevamente con él, el respondió que enviaría los documentos y que esperaba nuestra llamada. Me despedí amablemente y deseándole un buen día.", "duracion": "3", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-08 13:09:42", "hora": "13:09", "agente": "Berenice", "campana": "SINDICATO STT", "membresia": "0922941578505899", "quien": "Arturo Isaac Mariles Arciñega", "telefono": "5530301020", "tipo": "Entrante", "fecha": "8/9/2026", "motivo": "Información General", "prioridad": "Normal", "estatus": "Completado", "notas": "Quiere ver lo de asistencia legal solo que comenta que lo envía a buzón y quiere agregar comercio para descuentos para los agremiados quiere ver si puede adquirir otra membresía", "duracion": "5", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-08 15:24:36", "hora": "15:24", "agente": "Berenice", "campana": "Pliis", "membresia": "10141559", "quien": "Miriam Piña Mendez", "telefono": "5554345112", "tipo": "Entrante", "fecha": "8/9/2026", "motivo": "Asistecias", "prioridad": "Normal", "estatus": "Completado", "notas": "Se comunica ya que requiere estudios de laboratorio para MASTOGRAFIA Y PAPANICOLAOU se le proporciona numero para qué haga su solicitud", "duracion": "2", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-09 10:00:34", "hora": "10:00", "agente": "Jazmin", "campana": "Prueba", "membresia": "123", "quien": "Prueba", "telefono": "Prueba", "tipo": "Entrante", "fecha": "9/9/2026", "motivo": "Prueba", "prioridad": "Normal", "estatus": "Completado", "notas": "Llamada de prueba", "duracion": "0", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-09 13:16:41", "hora": "13:16", "agente": "Berenice", "campana": "Prueba", "membresia": "123", "quien": "Prueba", "telefono": "Prueba", "tipo": "Entrante", "fecha": "9/9/2026", "motivo": "Prueba", "prioridad": "Normal", "estatus": "Completado", "notas": "Prueba", "duracion": "0", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-10 9:43:10", "hora": "9:43", "agente": "Jazmin", "campana": "Pliis", "membresia": "10319170", "quien": "Gustavo González Ramos", "telefono": "9931283063", "tipo": "Entrante", "fecha": "10/9/2026", "motivo": "Información General", "prioridad": "Normal", "estatus": "Completado", "notas": "El usuario se comunicó para solicitar con urgencia el estudio de electrocardiograma y química sanguínea, amablemente le comenté que esos estudios se solicitan vía WhatsApp, le informé los datos que le solicitaríamos y las fechas disponibles para sus estudios, comento que mandaría un mensaje por ese medio ya que le urgían los estudios, nos despedimos y colgamos la llamada.", "duracion": "2", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-10 10:01:58", "hora": "10:01", "agente": "Jazmin", "campana": "Salud total DONDE", "membresia": "0926065952385888", "quien": "MONICA ESTEFFANI BAAS REJON", "telefono": "9992570847", "tipo": "Entrante", "fecha": "10/9/2026", "motivo": "Información General", "prioridad": "Normal", "estatus": "Pendiente", "notas": "Se comunico la usuaria para preguntar por qué no podía entrar a la aplicación, me comento que acaba de adquirir su seguro y que no le llego el correo con su número de membresía pregunta si podemos reenviárselo o tiene que esperar. Se le reenvio su membresia y confirmo de recibido", "duracion": "1", "resolucion": "Requiere otra llamada de nuestra parte"}, {"ts": "2026-09-10 10:04:45", "hora": "10:04", "agente": "Jazmin", "campana": "Pliis", "membresia": "10328699", "quien": "Saul Adolfo", "telefono": "5588693796", "tipo": "Entrante", "fecha": "10/9/2026", "motivo": "Beneficios", "prioridad": "Normal", "estatus": "Completado", "notas": "Llamo para solicitar un descuento en ecografía, le comenté que se podía comunicar a telemedicina o verificar en epic club, le informé como ingresar a la aplicación y colgamos la llamada despidiéndonos amablemente.", "duracion": "2", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-10 10:07:18", "hora": "10:07", "agente": "Jazmin", "campana": "Prueba", "membresia": "123", "quien": "Prueba", "telefono": "Prueba", "tipo": "Entrante", "fecha": "10/9/2026", "motivo": "Prueba", "prioridad": "Normal", "estatus": "Completado", "notas": "Al responder, me comentaron que era una llamada de prueba, nos despedimos y colgamos la llamada.", "duracion": "0", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-10 12:56:27", "hora": "12:56", "agente": "Berenice", "campana": "CONTIGO+ PRESTIGE", "membresia": "424859996226688", "quien": "Ubaldo Carmona", "telefono": "5578579203", "tipo": "Entrante", "fecha": "10/9/2026", "motivo": "Beneficios", "prioridad": "Normal", "estatus": "Completado", "notas": "consulta si existe una alianza entre Epic y la escuela Quick Learning y solicita confirmar beneficios y pasos para usar la Epic Club. Ya que elimino un correo Se le explica que, dentro de la app, en la sección Epic Club se muestran cupones y sucursales aplicables; si perdió el correo, puede verlos en la app. los convenios, pero que en la app también se pueden encontrar. El cliente revisa categorías de la app se le orienta a buscar por el buscador", "duracion": "2", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-10 13:40:26", "hora": "13:40", "agente": "Jazmin", "campana": "Salud total DONDE", "membresia": "0926065952385888", "quien": "MONICA ESTEFFANI BAAS REJON", "telefono": "9992570847", "tipo": "Saliente", "fecha": "10/9/2026", "motivo": "Información General", "prioridad": "Normal", "estatus": "Completado", "notas": "Llame, para confirmarle a la usuaria que se reenvió el correo de bienvenida, dándole seguimiento a la llamada anterior, e informarle que ya puede activar y hacer uso de sus beneficios. La usuaria agradeció por la atención y finalizamos la llamada.", "duracion": "1", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-11 13:15:57", "hora": "13:15", "agente": "Berenice", "campana": "Pliis", "membresia": "10109821", "quien": "JOSÉ ANGEL LUCERO", "telefono": "6645779677", "tipo": "Entrante", "fecha": "11/9/2026", "motivo": "Beneficios", "prioridad": "Normal", "estatus": "Completado", "notas": "Requiere Estudios para su Abuelita, se le indico como ingresar a la app para poder ingresar a Epic y poder verificar sus cupones ya que los estudios de salud digna solo son para titular cónyuge e hijos, ingreso de forma correcta", "duracion": "6", "resolucion": "Resuelto en esta llamada"}, {"ts": "2026-09-14 10:10:35", "hora": "10:10", "agente": "Jazmin", "campana": "Prueba", "membresia": "123", "quien": "Prueba", "telefono": "Prueba", "tipo": "Entrante", "fecha": "14/9/2026", "motivo": "Información General", "prioridad": "Normal", "estatus": "Completado", "notas": "Llamada de prueba", "duracion": "0", "resolucion": "Resuelto en esta llamada"}];
 
   const STATUS_PILL = { 'Completado':'ok', 'Resuelta':'ok', 'Pendiente':'warn', 'Escalada':'crit', 'Escalado':'crit' };
   const PRIORITY_PILL = { 'Normal':'ok', 'Urgente':'warn', 'Crítica':'crit', 'Critica':'crit' };
@@ -196,8 +223,37 @@
     return activeTab === 'Todas' ? CALLS : CALLS.filter(c => c.campana.trim() === activeTab);
   }
 
+  function normPhone(p){
+    const d = (p||'').replace(/\D/g,'');
+    return d.length >= 7 ? d : null;
+  }
+
+  // Un cliente se identifica por teléfono (o por nombre si no hay teléfono).
+  // Devuelve, para cada llamada, si es la MÁS RECIENTE de ese cliente dentro
+  // del conjunto de filas dado — así una "Pendiente" vieja deja de contar
+  // como abierta en cuanto existe una llamada más nueva ya Completada.
+  function isLatestForClient(call, allRows){
+    const key = normPhone(call.telefono) || (call.quien ? 'name:' + call.quien.trim().toLowerCase() : null);
+    if (!key) return true;
+    const sameClient = allRows.filter(c => (normPhone(c.telefono) || (c.quien ? 'name:' + c.quien.trim().toLowerCase() : null)) === key);
+    const latest = sameClient.reduce((a,b) => (a.ts||'') >= (b.ts||'') ? a : b);
+    return latest === call;
+  }
+
+  function effectiveOpenIssues(rows){
+    // "abierta de verdad": Pendiente/Escalada Y ninguna llamada más nueva del mismo cliente ya la cerró.
+    return rows.filter(c => (c.estatus === 'Pendiente' || c.estatus.startsWith('Escalad')) && isLatestForClient(c, rows));
+  }
+
+  function daysSince(ts){
+    if (!ts) return null;
+    const then = new Date(ts.replace(' ', 'T'));
+    if (isNaN(then)) return null;
+    return Math.max(0, Math.floor((Date.now() - then.getTime()) / 86400000));
+  }
+
   function renderAlert(rows){
-    const issues = rows.filter(c => c.estatus === 'Pendiente' || c.estatus.startsWith('Escalad'));
+    const issues = effectiveOpenIssues(rows);
     const box = document.getElementById('alert-box');
     if (!issues.length){
       box.className = 'alert clear';
@@ -207,19 +263,90 @@
     box.className = 'alert has-issues';
     box.innerHTML = `<div style="width:100%;"><div style="display:flex;align-items:center;gap:14px;"><span class="icon">⚠</span>
       <span class="txt"><b>${issues.length}</b> llamada${issues.length===1?'':'s'} necesita${issues.length===1?'':'n'} seguimiento</span></div>
-      <div class="alert-list">${issues.map(c => `<div class="item"><span class="pill ${STATUS_PILL[c.estatus]||'warn'}"><span class="dot"></span>${escapeHtml(c.estatus)}</span> ${escapeHtml(c.agente)} — ${escapeHtml(c.quien)} · ${escapeHtml(c.motivo)}</div>`).join('')}</div></div>`;
+      <div class="alert-list">${issues.map(c => {
+        const d = daysSince(c.ts);
+        const ago = d === null ? '' : (d === 0 ? ' · hoy' : ` · lleva ${d} día${d===1?'':'s'} abierta`);
+        return `<div class="item"><span class="pill ${STATUS_PILL[c.estatus]||'warn'}"><span class="dot"></span>${escapeHtml(c.estatus)}</span> ${escapeHtml(c.agente)} — ${escapeHtml(c.quien)} · ${escapeHtml(c.motivo)}${ago}</div>`;
+      }).join('')}</div></div>`;
   }
 
   function renderStats(rows){
     const completadas = rows.filter(c => c.estatus === 'Completado' || c.estatus === 'Resuelta').length;
-    const pendientes = rows.filter(c => c.estatus === 'Pendiente').length;
-    const escaladas = rows.filter(c => c.estatus.startsWith('Escalad')).length;
+    const openIssues = effectiveOpenIssues(rows);
+    const pendientes = openIssues.filter(c => c.estatus === 'Pendiente').length;
+    const escaladas = openIssues.filter(c => c.estatus.startsWith('Escalad')).length;
     document.getElementById('stats-row').innerHTML = `
       <div class="stat"><div class="n mono">${rows.length}</div><div class="l">Llamadas</div></div>
       <div class="stat ok"><div class="n mono">${completadas}</div><div class="l">Completadas</div></div>
       <div class="stat warn"><div class="n mono">${pendientes}</div><div class="l">Pendientes</div></div>
       <div class="stat crit"><div class="n mono">${escaladas}</div><div class="l">Escaladas</div></div>
     `;
+  }
+
+  function renderMetrics(rows){
+    const withDur = rows.filter(c => c.duracion !== '' && !isNaN(parseFloat(c.duracion)));
+    const aht = withDur.length ? (withDur.reduce((s,c) => s + parseFloat(c.duracion), 0) / withDur.length) : null;
+
+    const withRes = rows.filter(c => c.resolucion !== '');
+    const resolved = withRes.filter(c => c.resolucion.startsWith('Resuelto')).length;
+    const fcr = withRes.length ? Math.round((resolved / withRes.length) * 100) : null;
+
+    document.getElementById('metrics-row').innerHTML = `
+      <div class="metric">
+        <div><div class="m-label">Tiempo prom. de atención (AHT)</div>
+          <div class="m-sub">${withDur.length ? `basado en ${withDur.length} llamada${withDur.length===1?'':'s'} con duración registrada` : 'aún sin llamadas con duración registrada'}</div></div>
+        <div class="m-val">${aht === null ? '—' : aht.toFixed(1) + ' min'}</div>
+      </div>
+      <div class="metric">
+        <div><div class="m-label">Resueltas a la primera (FCR)</div>
+          <div class="m-sub">${withRes.length ? `basado en ${withRes.length} llamada${withRes.length===1?'':'s'} con este dato` : 'aún sin llamadas con este dato'}</div></div>
+        <div class="m-val">${fcr === null ? '—' : fcr + '%'}</div>
+      </div>
+    `;
+  }
+
+  function renderCases(rows){
+    const groups = {};
+    rows.forEach(c => {
+      const key = normPhone(c.telefono) || (c.quien ? 'name:' + c.quien.trim().toLowerCase() : null);
+      if (!key) return;
+      (groups[key] = groups[key] || []).push(c);
+    });
+    const multi = Object.values(groups).filter(g => g.length > 1)
+      .map(g => g.slice().sort((a,b) => (a.ts||'').localeCompare(b.ts||'')));
+
+    const box = document.getElementById('cases-box');
+    if (!multi.length){
+      box.innerHTML = '<div class="empty-note">Aún no hay clientes con más de una llamada en este filtro — en cuanto alguien reciba seguimiento, aquí se conecta el historial completo.</div>';
+      return;
+    }
+    multi.sort((a,b) => (b[b.length-1].ts||'').localeCompare(a[a.length-1].ts||''));
+    box.innerHTML = multi.map(steps => {
+      const first = steps[0], last = steps[steps.length-1];
+      const wasOpenFirst = first.estatus === 'Pendiente' || first.estatus.startsWith('Escalad');
+      const nowResolved = last.estatus === 'Completado' || last.estatus === 'Resuelta';
+      let badge;
+      if (wasOpenFirst && nowResolved && steps.length > 1){
+        const t0 = new Date(first.ts.replace(' ','T')), t1 = new Date(last.ts.replace(' ','T'));
+        const hrs = Math.max(0, Math.round((t1-t0)/3600000));
+        badge = `<span class="ctime resolved">Resuelto en ${hrs < 48 ? hrs + ' h' : Math.round(hrs/24) + ' días'}</span>`;
+      } else if (last.estatus === 'Pendiente' || last.estatus.startsWith('Escalad')){
+        const d = daysSince(last.ts);
+        badge = `<span class="ctime open">Sigue abierto${d!==null ? ' · ' + d + 'd' : ''}</span>`;
+      } else {
+        badge = `<span class="ctime resolved">Cerrado</span>`;
+      }
+      return `<div class="case">
+        <div class="chead">
+          <div><span class="cname">${escapeHtml(last.quien)}</span> <span class="cphone">${escapeHtml(last.telefono)}</span></div>
+          ${badge}
+        </div>
+        <div class="case-steps">${steps.map(s => `
+          <div class="case-step"><span class="cs-time">${escapeHtml(s.fecha)} ${escapeHtml(s.hora)}</span>
+            <span class="cs-txt"><span class="pill ${STATUS_PILL[s.estatus]||'warn'}" style="margin-right:6px;"><span class="dot"></span>${escapeHtml(s.estatus)}</span>${escapeHtml(s.motivo)} — ${escapeHtml(s.agente)}</span></div>
+        `).join('')}</div>
+      </div>`;
+    }).join('');
   }
 
   function renderChart(rows){
@@ -281,7 +408,7 @@
   function renderTable(rows){
     document.getElementById('table-count').textContent = rows.length + (rows.length===1 ? ' llamada' : ' llamadas');
     const body = document.getElementById('calls-body');
-    if (!rows.length){ body.innerHTML = '<tr class="empty-row"><td colspan="11">Sin llamadas para este filtro.</td></tr>'; return; }
+    if (!rows.length){ body.innerHTML = '<tr class="empty-row"><td colspan="12">Sin llamadas para este filtro.</td></tr>'; return; }
     const sorted = rows.slice().sort((a,b) => (b.ts||'').localeCompare(a.ts||''));
     body.innerHTML = sorted.map(c => `
       <tr>
@@ -295,6 +422,7 @@
         <td>${escapeHtml(c.motivo)}</td>
         <td><span class="pill ${PRIORITY_PILL[c.prioridad]||'ok'}"><span class="dot"></span>${escapeHtml(c.prioridad)}</span></td>
         <td><span class="pill ${STATUS_PILL[c.estatus]||'warn'}"><span class="dot"></span>${escapeHtml(c.estatus)}</span></td>
+        <td class="mono">${c.duracion ? escapeHtml(c.duracion) : '—'}</td>
         <td class="notes">${escapeHtml(c.notas)}</td>
       </tr>
     `).join('');
@@ -305,13 +433,15 @@
     const rows = filtered();
     renderAlert(rows);
     renderStats(rows);
+    renderMetrics(rows);
     renderChart(rows);
     renderTopMotivos(rows);
     renderBreakdowns(rows);
+    renderCases(rows);
     renderTable(rows);
   }
 
-  document.getElementById('asof-time').textContent = '4 sep 2026, 13:38 (hora CDMX)';
+  document.getElementById('asof-time').textContent = '14 sep 2026, 10:35 (hora CDMX)';
   renderAll();
 </script>
 </body>
