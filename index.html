@@ -185,7 +185,7 @@
     <table>
       <thead>
         <tr>
-          <th>Hora</th><th>Agente</th><th>Campaña</th><th># Memb./Emp.</th><th>Quién llamó</th>
+          <th>Fecha</th><th>Agente</th><th>Campaña</th><th># Memb./Emp.</th><th>Quién llamó</th>
           <th>Teléfono</th><th>Tipo</th><th>Motivo</th><th>Prioridad</th><th>Estatus</th><th>Min</th><th>Notas</th>
         </tr>
       </thead>
@@ -412,7 +412,7 @@
     const sorted = rows.slice().sort((a,b) => (b.ts||'').localeCompare(a.ts||''));
     body.innerHTML = sorted.map(c => `
       <tr>
-        <td class="time">${escapeHtml(c.hora)}</td>
+        <td class="time">${escapeHtml(c.fecha)}<br>${escapeHtml(c.hora)}</td>
         <td>${escapeHtml(c.agente)}</td>
         <td>${escapeHtml(c.campana)}</td>
         <td class="mono">${escapeHtml(c.membresia)}</td>
